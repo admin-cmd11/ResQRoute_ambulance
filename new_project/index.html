@@ -2,44 +2,100 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Remote Trigger</title>
-    <!-- Include Paho MQTT JavaScript Library -->
+    <!-- Paho MQTT Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
 
-    <button id="onBtn" onclick="sendOnSignal()">TURN ON</button>
+    <div class="container">
+        <button id="onBtn" onclick="sendOnSignal()" disabled>Connecting...</button>
+        <p id="status">Connecting to server...</p>
+    </div>
 
     <script>
-        // Use the exact same topic as your Python script
+        // Change this string to something unique to your project
         const TOPIC = "my_unique_project_channel_12345/control";
+        const btn = document.getElementById("onBtn");
+        const statusText = document.getElementById("status");
 
-        // Connect to HiveMQ via WebSockets (Port 8000)
-        const client = new Paho.MQTT.Client("broker.hivemq.com", 8884, "web_client_" + parseInt(Math.random() * 100, 10));
+        // Connect to EMQX Public Broker via SSL WebSockets (wss://broker.emqx.io:8084/mqtt)
+        const client = new Paho.MQTT.Client(
+            "broker.emqx.io", 
+            8084, 
+            "/mqtt", // EMQX requires the websocket path /mqtt
+            "web_client_" + Math.floor(Math.random() * 100000)
+        );
 
         client.onConnectionLost = (responseObject) => {
             console.log("Connection Lost: " + responseObject.errorMessage);
+            btn.innerText = "Disconnected";
+            btn.disabled = true;
+            statusText.innerText = "Connection lost. Please refresh.";
         };
 
-        // Connect the client
         client.connect({
-            useSSL: true,
+            useSSL: true, // Secure WebSocket for HTTPS / Netlify
+            timeout: 5,
             onSuccess: () => {
-                console.log("Connected securely via WSS!");
+                console.log("Successfully connected to EMQX Cloud Broker!");
                 btn.innerText = "TURN ON";
                 btn.disabled = false;
+                statusText.innerText = "Connected and Ready!";
+            },
+            onFailure: (err) => {
+                console.error("Connection failed: ", err);
+                btn.innerText = "Connection Failed";
+                statusText.innerText = "Error: " + err.errorMessage;
             }
         });
 
         function sendOnSignal() {
             if (!client.isConnected()) {
-                alert("Broker not connected yet. Try again in a second.");
+                alert("Broker not connected yet!");
                 return;
             }
+            
             const message = new Paho.MQTT.Message("ON");
             message.destinationName = TOPIC;
             client.send(message);
-            console.log("Sent 'ON' to cloud broker.");
+            console.log("Sent 'ON' to EMQX broker.");
+            statusText.innerText = "Trigger sent successfully!";
         }
     </script>
 </body>
