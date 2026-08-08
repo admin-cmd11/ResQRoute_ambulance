@@ -15,7 +15,7 @@
         const TOPIC = "my_unique_project_channel_12345/control";
 
         // Connect to HiveMQ via WebSockets (Port 8000)
-        const client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "web_client_" + parseInt(Math.random() * 100, 10));
+        const client = new Paho.MQTT.Client("broker.hivemq.com", 8884, "web_client_" + parseInt(Math.random() * 100, 10));
 
         client.onConnectionLost = (responseObject) => {
             console.log("Connection Lost: " + responseObject.errorMessage);
@@ -23,8 +23,11 @@
 
         // Connect the client
         client.connect({
+            useSSL: true,
             onSuccess: () => {
-                console.log("Connected to Cloud Broker from Web!");
+                console.log("Connected securely via WSS!");
+                btn.innerText = "TURN ON";
+                btn.disabled = false;
             }
         });
 
