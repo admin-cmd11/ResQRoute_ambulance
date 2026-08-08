@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Remote Trigger</title>
+    <!-- Include Paho MQTT JavaScript Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+</head>
+<body>
+
+    <button id="onBtn" onclick="sendOnSignal()">TURN ON</button>
+
+    <script>
+        // Use the exact same topic as your Python script
+        const TOPIC = "my_unique_project_channel_12345/control";
+
+        // Connect to HiveMQ via WebSockets (Port 8000)
+        const client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "web_client_" + parseInt(Math.random() * 100, 10));
+
+        client.onConnectionLost = (responseObject) => {
+            console.log("Connection Lost: " + responseObject.errorMessage);
+        };
+
+        // Connect the client
+        client.connect({
+            onSuccess: () => {
+                console.log("Connected to Cloud Broker from Web!");
+            }
+        });
+
+        function sendOnSignal() {
+            if (!client.isConnected()) {
+                alert("Broker not connected yet. Try again in a second.");
+                return;
+            }
+            const message = new Paho.MQTT.Message("ON");
+            message.destinationName = TOPIC;
+            client.send(message);
+            console.log("Sent 'ON' to cloud broker.");
+        }
+    </script>
+</body>
+</html>
